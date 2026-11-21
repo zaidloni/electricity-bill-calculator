@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Electricity bill calculator</title>
+    <style>
+        :root {
+            font-family: "Avenir Next", Segoe UI, sans-serif;
+            color: #183b50;
+            background: #edf4f8;
+            font-size: 16px
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0
+        }
+
+        main {
+            max-width: 940px;
+            margin: 50px auto;
+            padding: 0 22px
+        }
+
+        h1 {
+            font-size: clamp(28px, 5vw, 40px);
+            letter-spacing: -1.2px;
+            margin: 0 0 10px
+        }
+
+        p {
+            line-height: 1.6;
+            color: #526a79
+        }
+
+        header {
+            margin-bottom: 28px
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            background: white;
+            border: 1px solid #cbdce6;
+            border-radius: 16px;
+            overflow: hidden
+        }
+
+        .entry {
+            padding: 30px
+        }
+
+        .result {
+            padding: 30px;
+            background: #dceef7
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 10px
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            font: inherit;
+            font-size: 24px;
+            border: 1px solid #809caa;
+            border-radius: 6px;
+            color: inherit
+        }
+
+        button {
+            font: inherit;
+            cursor: pointer;
+            border-radius: 6px;
+            padding: 12px 18px;
+            border: 1px solid #b3c7d3;
+            background: white;
+            color: #183b50
+        }
+
+        button.primary {
+            background: #09699b;
+            color: white;
+            border: 0;
+            width: 100%;
+            margin-top: 16px;
+            font-weight: 600
+        }
+
+        button:hover {
+            filter: brightness(.95)
+        }
+
+        :focus-visible {
+            outline: 3px solid #b85f08;
+            outline-offset: 3px
+        }
+
+        .amount {
+            font-size: 44px;
+            font-weight: 700;
+            letter-spacing: -1.5px;
+            margin: 8px 0
+        }
+
+        .small {
+            font-size: 13px;
+            line-height: 1.6
+        }
+
+        #status {
+            min-height: 22px;
+            margin: 12px 0 0
+        }
+
+        h2 {
+            font-size: 22px;
+            margin: 0
+        }
+
+        .history-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 34px;
+            margin-bottom: 14px
+        }
+
+        .scroll {
+            overflow-x: auto
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 13px 12px;
+            border-bottom: 1px solid #d9e4eb;
+            white-space: nowrap
+        }
+
+        th {
+            font-size: 13px;
+            color: #526a79
+        }
+
+        td:last-child,
+        th:last-child {
+            text-align: right
+        }
+
+        details {
+            margin-top: 20px
+        }
+
+        summary {
+            cursor: pointer;
+            font-weight: 600
+        }
+
+        dl {
+            font-size: 14px
+        }
+
+        dl div {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 8px 0;
+            border-bottom: 1px solid #bdd5e1
+        }
+
+        dd {
+            margin: 0;
+            white-space: nowrap
+        }
+
+        .note {
+            margin-top: 24px;
+            font-size: 13px
+        }
+
+        #empty {
+            padding: 22px;
+            background: white;
+            border-radius: 8px
+        }
+
+        button.remove {
+            padding: 5px 9px;
+            font-size: 13px
+        }
+
+        @media(max-width:620px) {
+            main {
+                margin: 28px auto
+            }
+
+            .layout {
+                grid-template-columns: 1fr
+            }
+
+            .entry,
+            .result {
+                padding: 24px
+            }
+
+            .amount {
+                font-size: 38px
+            }
+
+            th,
+            td {
+                padding: 12px 8px
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <header>
+            <h1>Electricity bill calculator</h1>
+            <p>Enter your monthly units to estimate your MSEDCL bill.</p>
+        </header>
+        <div class="layout">
+            <section class="entry">
+                <form id="form"><label for="units">Units consumed (kWh)</label><input id="units" name="units"
+                        type="number" min="0" max="1000000" step="0.01" placeholder="e.g. 169" required><button
+                        class="primary" type="submit">Calculate & save</button></form>
+                <p id="status" class="small" role="status" aria-live="polite"></p>
+                <p class="small">Each calculation is saved with the date and time in this browser.</p>
+            </section>
+            <section class="result" aria-live="polite">
+                <div>Estimated bill</div>
+                <div class="amount" id="amount">₹0.00</div>
+                <div class="small" id="rounding">Enter units to see your estimate.</div>
+                <details id="breakdown">
+                    <summary>View charge breakdown</summary>
+                    <dl id="charges"></dl>
+                </details>
+            </section>
+        </div>
+        <section>
+            <div class="history-head">
+                <h2>Previous calculations</h2><button id="clear" type="button">Clear history</button>
+            </div>
+            <p id="empty">No saved calculations yet. Enter units above to start.</p>
+            <div class="scroll">
+                <table id="history" hidden>
+                    <thead>
+                        <tr>
+                            <th>Date & time</th>
+                            <th>Units</th>
+                            <th>Estimated bill</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="rows"></tbody>
+                </table>
+            </div>
+        </section>
+        <details>
+            <summary>Rates used</summary>
+            <p class="small">Based on your October 2026 bill, for one month of residential single-phase usage.</p>
+            <div class="scroll">
+                <table>
+                    <caption style="text-align:left;padding:12px;font-weight:600">Usage slab rates</caption>
+                    <thead>
+                        <tr>
+                            <th>Monthly units</th>
+                            <th>Energy / unit</th>
+                            <th>Fuel adjustment / unit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>First 100</td>
+                            <td>₹3.96</td>
+                            <td>₹0.25</td>
+                        </tr>
+                        <tr>
+                            <td>101–300</td>
+                            <td>₹10.80</td>
+                            <td>₹0.50</td>
+                        </tr>
+                        <tr>
+                            <td>301–500</td>
+                            <td>₹15.03</td>
+                            <td>₹0.65</td>
+                        </tr>
+                        <tr>
+                            <td>501–1,000</td>
+                            <td>₹17.53</td>
+                            <td>₹0.70</td>
+                        </tr>
+                        <tr>
+                            <td>Above 1,000</td>
+                            <td>₹17.53</td>
+                            <td>₹0.70</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="small">Each rate applies only to the units within that slab.</p>
+            <div class="scroll">
+                <table>
+                    <caption style="text-align:left;padding:12px;font-weight:600">Other charges</caption>
+                    <thead>
+                        <tr>
+                            <th>Charge</th>
+                            <th>Rate / calculation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Fixed charge</td>
+                            <td>₹140 / month, including ₹10 municipal addition</td>
+                        </tr>
+                        <tr>
+                            <td>Wheeling</td>
+                            <td>₹1.60 / unit</td>
+                        </tr>
+                        <tr>
+                            <td>Electricity duty</td>
+                            <td>16% of fixed + energy + fuel + wheeling charges</td>
+                        </tr>
+                        <tr>
+                            <td>Electricity tax</td>
+                            <td>₹0, as shown on your bill</td>
+                        </tr>
+                        <tr>
+                            <td>Final rounding</td>
+                            <td>Nearest ₹10</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </details>
+        <p class="note">This is an estimate using the uploaded bill's rates. It excludes arrears, credits, discounts,
+            late fees and security deposits. History stays in this browser on this device; clearing browser data removes
+            it. Local HTML storage support depends on your browser. Keep this file in the same location to retain access
+            to its history.</p>
+    </main>
+    <script>
+        'use strict';
+        const KEY = 'msedcl-bill-history-v1';
+        const money = n => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(n);
+        const round = n => Math.round((n + Number.EPSILON) * 100) / 100;
+        function calculate(units) {
+            let remaining = units, energy = 0, fuel = 0;
+            for (const [size, rate, fac] of [[100, 3.96, .25], [200, 10.8, .5], [200, 15.03, .65], [500, 17.53, .7], [Infinity, 17.53, .7]]) {
+                const used = Math.min(remaining, size); energy += used * rate; fuel += used * fac; remaining -= used; if (remaining <= 0) break;
+            }
+            energy = round(energy); fuel = round(fuel);
+            const fixed = 140, wheeling = round(units * 1.6), duty = round((fixed + energy + fuel + wheeling) * .16), tax = 0;
+            const total = round(fixed + energy + fuel + wheeling + duty + tax);
+            return { fixed, energy, fuel, wheeling, duty, tax, total, bill: Math.round(total / 10) * 10 };
+        }
+        let history = [], loadError = false;
+        try { const saved = JSON.parse(localStorage.getItem(KEY) || '[]'); if (!Array.isArray(saved)) throw Error(); history = saved.filter(r => r && typeof r.id === 'string' && Number.isFinite(r.units) && r.units >= 0 && Number.isFinite(r.bill) && Number.isFinite(Date.parse(r.date))); } catch { loadError = true; }
+        const status = document.getElementById('status');
+        function persist(next) { try { localStorage.setItem(KEY, JSON.stringify(next)); history = next; return true; } catch { status.textContent = 'Your estimate is ready, but history could not be saved. Check browser storage permissions or available space.'; return false; } }
+        function render() {
+            const rows = document.getElementById('rows'); rows.replaceChildren(); document.getElementById('empty').hidden = history.length > 0; document.getElementById('history').hidden = history.length === 0; document.getElementById('clear').disabled = history.length === 0;
+            for (const record of history) { const tr = document.createElement('tr'); for (const value of [new Date(record.date).toLocaleString(), record.units.toLocaleString('en-IN', { maximumFractionDigits: 2 }), money(record.bill)]) { const td = document.createElement('td'); td.textContent = value; tr.append(td); } const td = document.createElement('td'), button = document.createElement('button'); button.className = 'remove'; button.textContent = 'Delete'; button.setAttribute('aria-label', 'Delete calculation from ' + new Date(record.date).toLocaleString()); button.onclick = () => { if (persist(history.filter(r => r.id !== record.id))) { render(); status.textContent = 'Calculation deleted.'; } }; td.append(button); tr.append(td); rows.append(tr); }
+        }
+        document.getElementById('form').addEventListener('submit', event => { event.preventDefault(); const input = document.getElementById('units'); if (!input.reportValidity()) return; const units = Number(input.value); if (!Number.isFinite(units) || units < 0) return; const result = calculate(units); document.getElementById('amount').textContent = money(result.bill); document.getElementById('rounding').textContent = money(result.total) + ' before rounding • ' + units + ' units'; const charges = document.getElementById('charges'); charges.replaceChildren(); for (const [label, key] of [['Energy charges', 'energy'], ['Fixed charge', 'fixed'], ['Wheeling charges', 'wheeling'], ['Fuel adjustment', 'fuel'], ['Electricity duty (16%)', 'duty'], ['Electricity tax', 'tax'], ['Total before rounding', 'total']]) { const row = document.createElement('div'), dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = label; dd.textContent = money(result[key]); row.append(dt, dd); charges.append(row); } const date = new Date().toISOString(), id = globalThis.crypto?.randomUUID?.() || Date.now() + '-' + Math.random().toString(36).slice(2); if (persist([{ id, date, units, bill: result.bill, total: result.total }, ...history])) status.textContent = 'Calculated and saved to history.'; render(); });
+        document.getElementById('clear').onclick = () => { if (confirm('Delete all saved calculations?')) { if (persist([])) { render(); status.textContent = 'History cleared.'; } } };
+        render(); if (loadError) status.textContent = 'Saved history could not be loaded. New calculations can still be made.';
+    </script>
+</body>
+
+</html>
